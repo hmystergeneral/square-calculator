@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse Fee Calculator (Fixed 1.75% Fee)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .calculator-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .calculator-card:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .input-field {
+            border-radius: 8px;
+            border: 1px solid #D1D5DB; /* gray-300 */
+            padding: 0.75rem 1rem;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .input-field:focus {
+            border-color: #60A5FA; /* blue-400 */
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3);
+            outline: none;
+        }
+        .calculate-button {
+            background-color: #3B82F6; /* blue-500 */
+            color: white;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: background-color 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .calculate-button:hover {
+            background-color: #2563EB; /* blue-600 */
+        }
+        .result-display {
+            background-color: #F3F4F6; /* gray-100 */
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #E5E7EB; /* gray-200 */
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-label {
+            color: #4B5563; /* gray-600 */
+            font-weight: 500;
+        }
+        .result-value {
+            color: #1F2937; /* gray-800 */
+            font-weight: 600;
+        }
+        .error-message {
+            color: #EF4444; /* red-500 */
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .info-text {
+            color: #4B5563; /* gray-600 */
+            font-size: 0.875rem; /* text-sm */
+            text-align: center;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-sky-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="calculator-card w-full max-w-lg">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Reverse Fee Calculator</h1>
+        <p class="text-center text-gray-600 mb-8">Calculates the amount to charge to receive a specific net amount after a fixed 1.75% fee.</p>
+
+        <div class="space-y-6">
+            <div>
+                <label for="desiredAmount" class="block text-sm font-medium text-gray-700 mb-1">Desired Net Amount (£):</label>
+                <input type="number" id="desiredAmount" step="0.01" placeholder="e.g., 10.00" class="input-field w-full">
+                <p id="desiredAmountError" class="error-message hidden"></p>
+            </div>
+        </div>
+        
+        <p class="info-text">A fixed fee of <strong>1.75%</strong> will be applied.</p>
+
+        <div class="mt-2 text-center"> 
+            <button id="calculateBtn" class="calculate-button w-full sm:w-auto">
+                Calculate Amount to Charge
+            </button>
+        </div>
+
+        <div id="results" class="result-display hidden mt-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Calculation Breakdown</h2>
+            <div class="space-y-2">
+                <div class="result-item">
+                    <span class="result-label">Amount to Charge (Gross):</span>
+                    <span id="grossAmountResult" class="result-value"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Fee Amount (1.75%):</span>
+                    <span id="feeAmountResult" class="result-value"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Final Amount Received (Net):</span>
+                    <span id="netAmountResult" class="result-value"></span>
+                </div>
+            </div>
+        </div>
+        </div>
+
+    <script>
+        // DOM Elements
+        const desiredAmountInput = document.getElementById('desiredAmount');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultsDiv = document.getElementById('results');
+        const grossAmountResultEl = document.getElementById('grossAmountResult');
+        const feeAmountResultEl = document.getElementById('feeAmountResult');
+        const netAmountResultEl = document.getElementById('netAmountResult');
+        const desiredAmountErrorEl = document.getElementById('desiredAmountError');
+
+        // Gemini API related DOM elements and variables have been removed
+
+        // Fixed Fee Percentage
+        const FIXED_FEE_PERCENTAGE = 1.75;
+        // Removed currentGrossAmount and currentFeeAmount as they were only for the API
+
+        // Event Listener for Calculate Button
+        calculateBtn.addEventListener('click', () => {
+            // Clear previous errors and results
+            hideError(desiredAmountErrorEl);
+            resultsDiv.classList.add('hidden');
+            // Removed lines related to disabling insights button and hiding insights container
+
+            // Get and validate inputs
+            const desiredAmount = parseFloat(desiredAmountInput.value);
+
+            let hasError = false;
+
+            if (isNaN(desiredAmount) || desiredAmount <= 0) {
+                showError(desiredAmountErrorEl, 'Please enter a valid positive desired amount.');
+                hasError = true;
+            }
+
+            if (hasError) {
+                return;
+            }
+
+            // Perform calculation
+            const feeDecimal = FIXED_FEE_PERCENTAGE / 100;
+            const grossAmount = desiredAmount / (1 - feeDecimal);
+            const feeAmount = grossAmount * feeDecimal;
+            const netAmountReceived = grossAmount - feeAmount;
+
+            // Display results, rounded to 2 decimal places for currency
+            grossAmountResultEl.textContent = `£${grossAmount.toFixed(2)}`;
+            feeAmountResultEl.textContent = `£${feeAmount.toFixed(2)}`;
+            netAmountResultEl.textContent = `£${netAmountReceived.toFixed(2)}`;
+
+            resultsDiv.classList.remove('hidden');
+            // Removed line related to enabling insights button
+        });
+
+        // Removed Event Listener for Get Insights Button and related API call logic
+
+        // Helper function to show error messages
+        function showError(element, message) {
+            element.textContent = message;
+            element.classList.remove('hidden');
+        }
+
+        // Helper function to hide error messages
+        function hideError(element) {
+            element.textContent = '';
+            element.classList.add('hidden');
+        }
+
+        // Allow Enter key to trigger calculation from input field
+        desiredAmountInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                calculateBtn.click();
+            }
+        });
+
+    </script>
+
+</body>
+</html>
