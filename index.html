@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reverse Fee Calculator (Fixed 1.75% Fee)</title>
+    <title>Enhanced Reverse Fee Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -17,22 +17,38 @@
             padding: 2rem;
             transition: all 0.3s ease-in-out;
         }
-        .calculator-card:hover {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        .input-field {
+        .input-field { /* General style for number/text inputs */
             border-radius: 8px;
             border: 1px solid #D1D5DB; /* gray-300 */
             padding: 0.75rem 1rem;
             transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            width: 100%;
         }
         .input-field:focus {
             border-color: #60A5FA; /* blue-400 */
             box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3);
             outline: none;
         }
-        .calculate-button {
-            background-color: #3B82F6; /* blue-500 */
+        /* Input group for desired amount with currency prefix */
+        .input-group {
+            position: relative;
+        }
+        .input-group-prefix {
+            position: absolute;
+            inset-y: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            padding-left: 0.75rem; /* pl-3 */
+            pointer-events: none;
+            color: #6B7280; /* gray-500 */
+            font-size: 0.875rem; /* sm:text-sm */
+        }
+        .input-field-with-prefix {
+            padding-left: 2.5rem !important; /* Adjust based on prefix width + spacing */
+        }
+
+        .action-button {
             color: white;
             font-weight: 500;
             padding: 0.75rem 1.5rem;
@@ -40,77 +56,93 @@
             transition: background-color 0.2s ease-in-out;
             cursor: pointer;
         }
-        .calculate-button:hover {
-            background-color: #2563EB; /* blue-600 */
+        .calculate-button { background-color: #3B82F6; /* blue-500 */ }
+        .calculate-button:hover { background-color: #2563EB; /* blue-600 */ }
+        /* Removed .clear-button styles as the button is removed */
+        
+        .copy-button {
+            background-color: #10B981; /* emerald-500 */
+            color: white;
+            font-size: 0.75rem; /* text-xs */
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
         }
-        .result-display {
+        .copy-button:hover { background-color: #059669; /* emerald-600 */ }
+
+        .result-display, .history-section {
             background-color: #F3F4F6; /* gray-100 */
             padding: 1.5rem;
             border-radius: 8px;
-            margin-top: 1.5rem;
+            margin-top: 2rem; /* Increased margin for separation */
         }
-        .result-item {
+        .result-item, .history-item-content {
             display: flex;
             justify-content: space-between;
-            padding: 0.5rem 0;
+            align-items: center; 
+            padding: 0.75rem 0; 
             border-bottom: 1px solid #E5E7EB; /* gray-200 */
         }
-        .result-item:last-child {
-            border-bottom: none;
-        }
-        .result-label {
-            color: #4B5563; /* gray-600 */
-            font-weight: 500;
-        }
-        .result-value {
-            color: #1F2937; /* gray-800 */
-            font-weight: 600;
-        }
-        .error-message {
-            color: #EF4444; /* red-500 */
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
-        }
-        .info-text {
-            color: #4B5563; /* gray-600 */
+        .result-item:last-child, .history-item-content:last-child { border-bottom: none; }
+        .result-label, .history-label { color: #4B5563; /* gray-600 */ font-weight: 500; }
+        .result-value, .history-value { color: #1F2937; /* gray-800 */ font-weight: 600; }
+        
+        .history-item { 
             font-size: 0.875rem; /* text-sm */
-            text-align: center;
-            margin-top: 1rem;
-            margin-bottom: 1.5rem;
+            background-color: white;
+            padding: 0.75rem 1rem; 
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
+        .history-item div { margin-bottom: 0.25rem; }
+        .history-item div:last-child { margin-bottom: 0; }
+
+        .error-message { color: #EF4444; font-size: 0.875rem; margin-top: 0.25rem; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-100 to-sky-100 min-h-screen flex items-center justify-center p-4">
 
-    <div class="calculator-card w-full max-w-lg">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Reverse Fee Calculator</h1>
-        <p class="text-center text-gray-600 mb-8">Calculates the amount to charge to receive a specific net amount after a fixed 1.75% fee.</p>
+    <div class="calculator-card w-full max-w-md"> <!-- Reduced max-w slightly -->
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Reverse Fee Calculator</h1>
 
-        <div class="space-y-6">
+        <!-- Input Section -->
+        <div class="mb-6 space-y-6"> <!-- Added space-y for consistent spacing -->
             <div>
-                <label for="desiredAmount" class="block text-sm font-medium text-gray-700 mb-1">Desired Net Amount (£):</label>
-                <input type="number" id="desiredAmount" step="0.01" placeholder="e.g., 10.00" class="input-field w-full">
+                <label for="desiredAmount" class="block text-sm font-medium text-gray-700 mb-1">Desired Net Amount:</label>
+                <div class="input-group">
+                    <span id="desiredAmountPrefix" class="input-group-prefix">£</span>
+                    <input type="number" id="desiredAmount" step="0.01" placeholder="e.g. £10.00" class="input-field input-field-with-prefix">
+                </div>
                 <p id="desiredAmountError" class="error-message hidden"></p>
             </div>
+            <div>
+                <label for="feePercentage" class="block text-sm font-medium text-gray-700 mb-1">Fee Percentage (%):</label>
+                <input type="number" id="feePercentage" step="0.01" value="1.75" placeholder="e.g., 1.75" class="input-field">
+                <p id="feePercentageError" class="error-message hidden"></p>
+            </div>
         </div>
-        
-        <p class="info-text">A fixed fee of <strong>1.75%</strong> will be applied.</p>
 
-        <div class="mt-2 text-center"> 
-            <button id="calculateBtn" class="calculate-button w-full sm:w-auto">
-                Calculate Amount to Charge
+        <!-- Action Buttons -->
+        <div class="flex justify-center mt-8 mb-8"> <!-- Centering the single button -->
+            <button id="calculateBtn" class="action-button calculate-button w-full sm:w-auto">
+                Calculate
             </button>
+            <!-- Clear Fields button removed -->
         </div>
 
-        <div id="results" class="result-display hidden mt-8">
+        <!-- Results Section -->
+        <div id="results" class="result-display hidden">
             <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Calculation Breakdown</h2>
-            <div class="space-y-2">
+            <div class="space-y-1"> 
                 <div class="result-item">
                     <span class="result-label">Amount to Charge (Gross):</span>
-                    <span id="grossAmountResult" class="result-value"></span>
+                    <div class="flex items-center">
+                        <span id="grossAmountResult" class="result-value"></span>
+                        <button id="copyGrossBtn" class="copy-button hidden ml-2">Copy</button>
+                    </div>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Fee Amount (1.75%):</span>
+                    <span class="result-label">Fee Amount:</span>
                     <span id="feeAmountResult" class="result-value"></span>
                 </div>
                 <div class="result-item">
@@ -119,83 +151,234 @@
                 </div>
             </div>
         </div>
+
+        <!-- History Section -->
+        <div id="historySection" class="history-section hidden">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Calculation History</h2>
+            <ul id="historyList" class="space-y-3">
+                <!-- History items will be injected here -->
+            </ul>
+            <button id="clearHistoryBtn" class="action-button bg-red-500 hover:bg-red-600 w-full mt-6 text-sm py-2">Clear History</button> <!-- Re-styled clear history button -->
         </div>
+    </div>
 
     <script>
         // DOM Elements
+        // const currencySymbolInput = document.getElementById('currencySymbol'); // Removed
         const desiredAmountInput = document.getElementById('desiredAmount');
+        const desiredAmountPrefix = document.getElementById('desiredAmountPrefix');
+        const feePercentageInput = document.getElementById('feePercentage');
         const calculateBtn = document.getElementById('calculateBtn');
+        // const clearBtn = document.getElementById('clearBtn'); // Removed
+        
         const resultsDiv = document.getElementById('results');
         const grossAmountResultEl = document.getElementById('grossAmountResult');
         const feeAmountResultEl = document.getElementById('feeAmountResult');
         const netAmountResultEl = document.getElementById('netAmountResult');
+        const copyGrossBtn = document.getElementById('copyGrossBtn');
+
+        const historySection = document.getElementById('historySection');
+        const historyList = document.getElementById('historyList');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+        // const currencySymbolErrorEl = document.getElementById('currencySymbolError'); // Removed
         const desiredAmountErrorEl = document.getElementById('desiredAmountError');
+        const feePercentageErrorEl = document.getElementById('feePercentageError');
 
-        // Gemini API related DOM elements and variables have been removed
+        const MAX_HISTORY_ITEMS = 5;
+        let calculationHistory = [];
+        const DEFAULT_CURRENCY_SYMBOL = '£';
 
-        // Fixed Fee Percentage
-        const FIXED_FEE_PERCENTAGE = 1.75;
-        // Removed currentGrossAmount and currentFeeAmount as they were only for the API
+        // --- Update Currency Display ---
+        function updateCurrencyDisplays() {
+            desiredAmountPrefix.textContent = DEFAULT_CURRENCY_SYMBOL;
+        }
 
-        // Event Listener for Calculate Button
-        calculateBtn.addEventListener('click', () => {
-            // Clear previous errors and results
+        // --- Local Storage Functions ---
+        function loadPreferences() {
+            updateCurrencyDisplays(); // Sets the default prefix
+
+            const savedFee = localStorage.getItem('calculatorFeePercentage');
+            if (savedFee) feePercentageInput.value = savedFee;
+
+            const savedHistory = localStorage.getItem('calculatorHistory');
+            if (savedHistory) {
+                calculationHistory = JSON.parse(savedHistory);
+                renderHistory();
+            }
+        }
+
+        // function saveCurrency() { // Removed
+        // }
+        function saveFeePercentage() {
+            localStorage.setItem('calculatorFeePercentage', feePercentageInput.value);
+        }
+        function saveHistory() {
+            localStorage.setItem('calculatorHistory', JSON.stringify(calculationHistory));
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', loadPreferences);
+
+        // currencySymbolInput.addEventListener('input', saveCurrency); // Removed
+        feePercentageInput.addEventListener('change', saveFeePercentage);
+        
+        calculateBtn.addEventListener('click', handleCalculation);
+        // clearBtn.addEventListener('click', clearFields); // Removed
+        copyGrossBtn.addEventListener('click', copyGrossAmount);
+        clearHistoryBtn.addEventListener('click', clearHistory);
+
+        // --- Core Logic ---
+        function handleCalculation() {
+            // hideError(currencySymbolErrorEl); // Removed
             hideError(desiredAmountErrorEl);
-            resultsDiv.classList.add('hidden');
-            // Removed lines related to disabling insights button and hiding insights container
+            hideError(feePercentageErrorEl);
 
-            // Get and validate inputs
+            const currency = DEFAULT_CURRENCY_SYMBOL; // Hardcoded currency
             const desiredAmount = parseFloat(desiredAmountInput.value);
+            const feePercentage = parseFloat(feePercentageInput.value);
 
             let hasError = false;
-
+            // Currency symbol validation removed as it's fixed
             if (isNaN(desiredAmount) || desiredAmount <= 0) {
-                showError(desiredAmountErrorEl, 'Please enter a valid positive desired amount.');
+                showError(desiredAmountErrorEl, 'Enter a valid positive desired amount.');
+                hasError = true;
+            }
+            if (isNaN(feePercentage) || feePercentage < 0 || feePercentage >= 100) {
+                showError(feePercentageErrorEl, 'Enter a valid fee percentage (0-99.99).');
                 hasError = true;
             }
 
             if (hasError) {
+                resultsDiv.classList.add('hidden');
+                copyGrossBtn.classList.add('hidden');
                 return;
             }
 
-            // Perform calculation
-            const feeDecimal = FIXED_FEE_PERCENTAGE / 100;
+            const feeDecimal = feePercentage / 100;
             const grossAmount = desiredAmount / (1 - feeDecimal);
             const feeAmount = grossAmount * feeDecimal;
             const netAmountReceived = grossAmount - feeAmount;
 
-            // Display results, rounded to 2 decimal places for currency
-            grossAmountResultEl.textContent = `£${grossAmount.toFixed(2)}`;
-            feeAmountResultEl.textContent = `£${feeAmount.toFixed(2)}`;
-            netAmountResultEl.textContent = `£${netAmountReceived.toFixed(2)}`;
-
+            grossAmountResultEl.textContent = `${currency}${grossAmount.toFixed(2)}`;
+            feeAmountResultEl.textContent = `${currency}${feeAmount.toFixed(2)} (${feePercentage}%)`;
+            netAmountResultEl.textContent = `${currency}${netAmountReceived.toFixed(2)}`;
+            
             resultsDiv.classList.remove('hidden');
-            // Removed line related to enabling insights button
-        });
+            copyGrossBtn.classList.remove('hidden');
+            copyGrossBtn.textContent = 'Copy';
 
-        // Removed Event Listener for Get Insights Button and related API call logic
 
-        // Helper function to show error messages
+            addToHistory({
+                currency, // Will always be '£'
+                desiredAmount: desiredAmount.toFixed(2),
+                feePercentage: feePercentage.toFixed(2),
+                grossAmount: grossAmount.toFixed(2),
+                timestamp: new Date().toLocaleString()
+            });
+        }
+
+        // function clearFields() { // Removed
+        // }
+
+        async function copyGrossAmount() {
+            const textToCopyWithSymbol = grossAmountResultEl.textContent;
+            if (!textToCopyWithSymbol) return;
+            
+            const numberRegex = /[0-9]+(\.[0-9]{1,2})?/;
+            const match = textToCopyWithSymbol.match(numberRegex);
+            const textToCopy = match ? match[0] : '';
+
+            if (!textToCopy) {
+                 copyGrossBtn.textContent = 'Error';
+                 setTimeout(() => { copyGrossBtn.textContent = 'Copy'; }, 2000);
+                return;
+            }
+
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                textArea.style.position = "fixed"; 
+                textArea.style.opacity = "0"; 
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+
+                copyGrossBtn.textContent = 'Copied!';
+                setTimeout(() => { copyGrossBtn.textContent = 'Copy'; }, 2000);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                copyGrossBtn.textContent = 'Failed';
+                 setTimeout(() => { copyGrossBtn.textContent = 'Copy'; }, 2000);
+            }
+        }
+
+        // --- History Functions ---
+        function addToHistory(item) {
+            calculationHistory.unshift(item); 
+            if (calculationHistory.length > MAX_HISTORY_ITEMS) {
+                calculationHistory.pop(); 
+            }
+            saveHistory();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyList.innerHTML = ''; 
+            if (calculationHistory.length === 0) {
+                historySection.classList.add('hidden');
+                return;
+            }
+            
+            calculationHistory.forEach(item => {
+                const li = document.createElement('li');
+                li.classList.add('history-item'); 
+                li.innerHTML = `
+                    <div class="history-item-content">
+                        <span class="history-label">Date:</span> 
+                        <span class="history-value">${item.timestamp}</span>
+                    </div>
+                    <div class="history-item-content">
+                        <span class="history-label">Desired Net:</span> 
+                        <span class="history-value">${item.currency}${item.desiredAmount}</span>
+                    </div>
+                    <div class="history-item-content">
+                        <span class="history-label">Fee %:</span> 
+                        <span class="history-value">${item.feePercentage}%</span>
+                    </div>
+                    <div class="history-item-content">
+                        <span class="history-label">Charge Gross:</span> 
+                        <span class="history-value">${item.currency}${item.grossAmount}</span>
+                    </div>
+                `;
+                historyList.appendChild(li);
+            });
+            historySection.classList.remove('hidden');
+        }
+        
+        function clearHistory() {
+            calculationHistory = [];
+            saveHistory();
+            renderHistory();
+        }
+
+        // --- Helper Functions ---
         function showError(element, message) {
             element.textContent = message;
             element.classList.remove('hidden');
         }
-
-        // Helper function to hide error messages
         function hideError(element) {
             element.textContent = '';
             element.classList.add('hidden');
         }
 
-        // Allow Enter key to trigger calculation from input field
-        desiredAmountInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                calculateBtn.click();
-            }
-        });
+        // Allow Enter key to trigger calculation from input fields
+        desiredAmountInput.addEventListener('keypress', (e) => e.key === 'Enter' && calculateBtn.click());
+        feePercentageInput.addEventListener('keypress', (e) => e.key === 'Enter' && calculateBtn.click());
+        // currencySymbolInput event listener removed
 
     </script>
-
 </body>
 </html>
