@@ -111,7 +111,7 @@
                 <label for="desiredAmount" class="block text-sm font-medium text-gray-700 mb-1">Desired Net Amount:</label>
                 <div class="input-group">
                     <span id="desiredAmountPrefix" class="input-group-prefix">£</span>
-                    <input type="number" id="desiredAmount" step="0.01" placeholder="e.g. £10.00" class="input-field input-field-with-prefix">
+                    <input type="text" inputmode="decimal" id="desiredAmount" placeholder="e.g., 10.00" class="input-field input-field-with-prefix">
                 </div>
                 <p id="desiredAmountError" class="error-message hidden"></p>
             </div>
@@ -164,12 +164,10 @@
 
     <script>
         // DOM Elements
-        // const currencySymbolInput = document.getElementById('currencySymbol'); // Removed
         const desiredAmountInput = document.getElementById('desiredAmount');
         const desiredAmountPrefix = document.getElementById('desiredAmountPrefix');
         const feePercentageInput = document.getElementById('feePercentage');
         const calculateBtn = document.getElementById('calculateBtn');
-        // const clearBtn = document.getElementById('clearBtn'); // Removed
         
         const resultsDiv = document.getElementById('results');
         const grossAmountResultEl = document.getElementById('grossAmountResult');
@@ -181,7 +179,6 @@
         const historyList = document.getElementById('historyList');
         const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
-        // const currencySymbolErrorEl = document.getElementById('currencySymbolError'); // Removed
         const desiredAmountErrorEl = document.getElementById('desiredAmountError');
         const feePercentageErrorEl = document.getElementById('feePercentageError');
 
@@ -196,7 +193,7 @@
 
         // --- Local Storage Functions ---
         function loadPreferences() {
-            updateCurrencyDisplays(); // Sets the default prefix
+            updateCurrencyDisplays(); 
 
             const savedFee = localStorage.getItem('calculatorFeePercentage');
             if (savedFee) feePercentageInput.value = savedFee;
@@ -208,8 +205,6 @@
             }
         }
 
-        // function saveCurrency() { // Removed
-        // }
         function saveFeePercentage() {
             localStorage.setItem('calculatorFeePercentage', feePercentageInput.value);
         }
@@ -220,26 +215,35 @@
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', loadPreferences);
 
-        // currencySymbolInput.addEventListener('input', saveCurrency); // Removed
         feePercentageInput.addEventListener('change', saveFeePercentage);
         
         calculateBtn.addEventListener('click', handleCalculation);
-        // clearBtn.addEventListener('click', clearFields); // Removed
         copyGrossBtn.addEventListener('click', copyGrossAmount);
         clearHistoryBtn.addEventListener('click', clearHistory);
+        
+        // NEW: Event listener to restrict input to numbers and a single decimal point
+        desiredAmountInput.addEventListener('input', function (e) {
+            let value = e.target.value;
+            // Remove any characters that are not digits or a period
+            value = value.replace(/[^0-9.]/g, '');
+            // Ensure there is only one period
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            e.target.value = value;
+        });
 
         // --- Core Logic ---
         function handleCalculation() {
-            // hideError(currencySymbolErrorEl); // Removed
             hideError(desiredAmountErrorEl);
             hideError(feePercentageErrorEl);
 
-            const currency = DEFAULT_CURRENCY_SYMBOL; // Hardcoded currency
+            const currency = DEFAULT_CURRENCY_SYMBOL;
             const desiredAmount = parseFloat(desiredAmountInput.value);
             const feePercentage = parseFloat(feePercentageInput.value);
 
             let hasError = false;
-            // Currency symbol validation removed as it's fixed
             if (isNaN(desiredAmount) || desiredAmount <= 0) {
                 showError(desiredAmountErrorEl, 'Enter a valid positive desired amount.');
                 hasError = true;
@@ -268,18 +272,14 @@
             copyGrossBtn.classList.remove('hidden');
             copyGrossBtn.textContent = 'Copy';
 
-
             addToHistory({
-                currency, // Will always be '£'
+                currency,
                 desiredAmount: desiredAmount.toFixed(2),
                 feePercentage: feePercentage.toFixed(2),
                 grossAmount: grossAmount.toFixed(2),
                 timestamp: new Date().toLocaleString()
             });
         }
-
-        // function clearFields() { // Removed
-        // }
 
         async function copyGrossAmount() {
             const textToCopyWithSymbol = grossAmountResultEl.textContent;
@@ -377,8 +377,8 @@
         // Allow Enter key to trigger calculation from input fields
         desiredAmountInput.addEventListener('keypress', (e) => e.key === 'Enter' && calculateBtn.click());
         feePercentageInput.addEventListener('keypress', (e) => e.key === 'Enter' && calculateBtn.click());
-        // currencySymbolInput event listener removed
 
     </script>
 </body>
 </html>
+
